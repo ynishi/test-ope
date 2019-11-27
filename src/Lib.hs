@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Lib
   ( someFunc
   , module System.IO
@@ -23,11 +25,13 @@ module Lib
   , tagM'
   , chunkTag
   , chunkTagM
+  , concatChkTM
   , tup
   , tup3
   , tup4
   , tup5
   , tup'
+  , tupM'
   , trd
   , frh
   , ffh
@@ -121,6 +125,9 @@ tup' :: [a] -> (a, [a])
 tup' [x]   = (x, [])
 tup' (x:y) = (x, y)
 
+tupM' :: [[a]] -> [(a, [a])]
+tupM' = map tup'
+
 -- list of Tuple [(a, b1),(a, b2)] to container list of tagged tuple (tag, [])
 tag :: [(a, b)] -> (a, [b])
 tag [(x, y)] = (x, [y])
@@ -137,15 +144,18 @@ tag' = tag . map tup
 tagM' :: [[[a]]] -> [(a, [a])]
 tagM' = map tag'
 
-chunkTag :: Int -> [(a, b)] -> (a, [[b]])
-chunkTag 0 [(x, _)] = (x, [[]])
-chunkTag _ [(x, y)] = (x, [[y]])
-chunkTag i xs = (fst t, chunksOf i (snd t))
+chunkTag :: Int -> [(a, b)] -> [(a, [b])]
+chunkTag 0 [(x, _)] = [(x, [])]
+chunkTag _ [(x, y)] = [(x, [y])]
+chunkTag i xs = map (fst t, ) . chunksOf i $ snd t
   where
     t = tag xs
 
-chunkTagM :: Int -> [[(a, b)]] -> [(a, [[b]])]
+chunkTagM :: Int -> [[(a, b)]] -> [[(a, [b])]]
 chunkTagM = map . chunkTag
+
+concatChkTM :: Int -> [[(a, b)]] -> [(a, [b])]
+concatChkTM i = concat . chunkTagM i
 
 inputfile = "input"
 
