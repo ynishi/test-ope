@@ -1,6 +1,8 @@
 module Main where
 
-import Lib
+import           Lib
 
 main :: IO ()
-main = someFunc
+main = do
+  x <- input
+  putStrLn $ show $ x
