@@ -27,6 +27,10 @@ module Lib
   , tagM'
   , tagT
   , tagT'
+  , unTag
+  , unTag'
+  , unTagL
+  , unTagL'
   , chunkTag
   , chunkTagM
   , concatChkTM
@@ -181,6 +185,22 @@ tagT =  tagM . groupM' fst . tupM' . map words
 -- tag from table
 tagT' :: Ord a => [[a]] -> [(a, [[a]])]
 tagT' =  tagM . groupM' fst . tupM'
+
+-- line from tag
+unTagL :: [(String, [[String]])] -> [[String]]
+unTagL = map unTag
+
+-- table from tag
+unTagL' :: [(a, [[a]])] -> [[[a]]]
+unTagL' = map unTag'
+
+-- line from tag 1
+unTag :: (String, [[String]]) -> [String]
+unTag = map (intercalate "\t") . unTag'
+
+-- table from tag 1
+unTag' :: (a, [[a]]) -> [[a]]
+unTag' (x, y) = map (\(v, w) -> [v] ++ w) $ zip (repeat x) y
 
 chunkTag :: Int -> [(a, b)] -> [(a, [b])]
 chunkTag 0 [(x, _)] = [(x, [])]
