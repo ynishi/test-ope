@@ -25,6 +25,8 @@ module Lib
   , tagM
   , tag'
   , tagM'
+  , tagT
+  , tagT'
   , chunkTag
   , chunkTagM
   , concatChkTM
@@ -36,8 +38,11 @@ module Lib
   , mergeDefaultWith
   , mergeDefaultWith'
   , mergeFull
+  , mergeFullM
   , mergeRight
+  , mergeRightM
   , mergeLeft
+  , mergeLeftM
   , tup
   , tup3
   , tup4
@@ -169,6 +174,14 @@ tag' = tag . map tup
 tagM' :: [[[a]]] -> [(a, [a])]
 tagM' = map tag'
 
+-- tag from line
+tagT :: [String] -> [(String, [[String]])]
+tagT =  tagM . groupM' fst . tupM' . map words
+
+-- tag from table
+tagT' :: Ord a => [[a]] -> [(a, [[a]])]
+tagT' =  tagM . groupM' fst . tupM'
+
 chunkTag :: Int -> [(a, b)] -> [(a, [b])]
 chunkTag 0 [(x, _)] = [(x, [])]
 chunkTag _ [(x, y)] = [(x, [y])]
@@ -249,6 +262,27 @@ mergeLeft xs ys = filter (\(_, x, _) -> isJust x) $ mergeFull xs ys
 -- sql right outer join like
 mergeRight :: (Ord a, Ord c) => [(a, c)] -> [(a, c)] -> [(a, Maybe c, Maybe c)]
 mergeRight = flip mergeLeft
+
+-- sql join like and map f to result
+mergeFullM
+  :: (Ord a, Ord c) =>
+     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeFullM f = mergeInnerM f mergeFull
+
+mergeLeftM
+  :: (Ord a, Ord c) =>
+     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeLeftM f = mergeInnerM f mergeLeft
+
+mergeRightM
+  :: (Ord a, Ord c) =>
+     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeRightM f = mergeInnerM f mergeRight
+
+mergeInnerM
+  :: (Ord a, Ord c) =>
+     ((a, Maybe c, Maybe c) -> b) -> ([(a, c)] -> [(a, c)] -> [(a, Maybe c, Maybe c)]) -> [(a, c)] -> [(a, c)] -> [b]
+mergeInnerM f m xs ys = map f $ m xs ys
 
 inputfile = "input"
 
