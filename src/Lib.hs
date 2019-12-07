@@ -13,6 +13,7 @@ module Lib
   , readWords
   , input
   , inputfile
+  , cols
   , slide
   , zips
   , zip3s
@@ -25,8 +26,13 @@ module Lib
   , tagM
   , tag'
   , tagM'
+  , tagMg'
   , tagT
   , tagT'
+  , tagN
+  , tagN'
+  , tagNs
+  , tagNs'
   , unTag
   , unTag'
   , unTagL
@@ -53,6 +59,8 @@ module Lib
   , tup5
   , tup'
   , tupM'
+  , tupN'
+  , tupNs
   , trd
   , frh
   , ffh
@@ -77,6 +85,9 @@ readLines name = lines <$> readFile name
 
 readWords :: String -> IO [[String]]
 readWords name = map words <$> readLines name
+
+cols :: [String] -> [[String]]
+cols = map words
 
 zips = uncurry zip . slide
 
@@ -153,8 +164,20 @@ tup' :: [a] -> (a, [a])
 tup' [x]   = (x, [])
 tup' (x:y) = (x, y)
 
+tupN' :: Int -> [a] -> ([a], [a])
+tupN' n xs = (take n xs, drop n xs)
+
+tupNs :: [Int] -> [a] -> ([a], [a])
+tupNs ns xs = (keys ns xs, vals ns xs)
+  where
+    keys ns xs = map (xs!!) ns
+    vals ns xs = catMaybes $ foldl (\z x -> take x z ++ [Nothing] ++ drop (x+1) z) (Just <$> xs) ns
+
 tupM' :: [[a]] -> [(a, [a])]
 tupM' = map tup'
+
+tupNM' :: Int -> [[a]] -> [([a], [a])]
+tupNM' n = map (tupN' n)
 
 -- list of Tuple [(a, b1),(a, b2)] to container list of tagged tuple (tag, [])
 data Tag a b
@@ -178,13 +201,37 @@ tag' = tag . map tup
 tagM' :: [[[a]]] -> [(a, [a])]
 tagM' = map tag'
 
+tagMg :: (Ord a, Ord b) => [(a, [b])] -> [(a, [[b]])]
+tagMg = tagM . groupM' fst
+
+tagMg' :: (Ord a, Ord b) => (c -> (a, b)) -> [c] -> [(a, [b])]
+tagMg' f = tagM . groupM' fst . map f
+
 -- tag from line
 tagT :: [String] -> [(String, [[String]])]
-tagT =  tagM . groupM' fst . tupM' . map words
+tagT = tagN 0
 
 -- tag from table
 tagT' :: Ord a => [[a]] -> [(a, [[a]])]
-tagT' =  tagM . groupM' fst . tupM'
+tagT' =  tagMg' tup'
+
+-- tag N col from line
+tagN :: Int -> [String] -> [(String, [[String]])]
+tagN n = tagN' n . map words
+
+-- tag N col from table
+tagN' :: Ord a => Int -> [[a]] -> [(a, [[a]])]
+tagN' n = tagT' . map toHead
+  where
+    toHead xs = [xs !! n] ++ take n xs ++ drop (n + 1) xs
+
+-- tag Ns cols from line
+tagNs :: [Int] -> [String] -> [([String], [[String]])]
+tagNs ns = tagNs' ns . map words
+
+-- tag Ns cols from table
+tagNs' :: Ord a => [Int] -> [[a]] -> [([a], [[a]])]
+tagNs' = tagMg' . tupNs
 
 -- line from tag
 unTagL :: [(String, [[String]])] -> [[String]]
@@ -200,7 +247,7 @@ unTag = map (intercalate "\t") . unTag'
 
 -- table from tag 1
 unTag' :: (a, [[a]]) -> [[a]]
-unTag' (x, y) = map (\(v, w) -> [v] ++ w) $ zip (repeat x) y
+unTag' (x, y) = zipWith (:) (repeat x) y
 
 chunkTag :: Int -> [(a, b)] -> [(a, [b])]
 chunkTag 0 [(x, _)] = [(x, [])]
