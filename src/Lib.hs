@@ -170,8 +170,10 @@ tupN' n xs = (take n xs, drop n xs)
 tupNs :: [Int] -> [a] -> ([a], [a])
 tupNs ns xs = (keys ns xs, vals ns xs)
   where
-    keys ns xs = map (xs!!) ns
-    vals ns xs = catMaybes $ foldl (\z x -> take x z ++ [Nothing] ++ drop (x+1) z) (Just <$> xs) ns
+    keys ns xs = map (xs !!) ns
+    vals ns xs =
+      catMaybes $
+      foldl (\z x -> take x z ++ [Nothing] ++ drop (x + 1) z) (Just <$> xs) ns
 
 tupM' :: [[a]] -> [(a, [a])]
 tupM' = map tup'
@@ -213,7 +215,7 @@ tagT = tagN 0
 
 -- tag from table
 tagT' :: Ord a => [[a]] -> [(a, [[a]])]
-tagT' =  tagMg' tup'
+tagT' = tagMg' tup'
 
 -- tag N col from line
 tagN :: Int -> [String] -> [(String, [[String]])]
@@ -247,7 +249,7 @@ unTag = map (intercalate "\t") . unTag'
 
 -- table from tag 1
 unTag' :: (a, [[a]]) -> [[a]]
-unTag' (x, y) = zipWith (:) (repeat x) y
+unTag' (x, y) = map ((:) x) y
 
 chunkTag :: Int -> [(a, b)] -> [(a, [b])]
 chunkTag 0 [(x, _)] = [(x, [])]
@@ -331,24 +333,37 @@ mergeRight :: (Ord a, Ord c) => [(a, c)] -> [(a, c)] -> [(a, Maybe c, Maybe c)]
 mergeRight = flip mergeLeft
 
 -- sql join like and map f to result
-mergeFullM
-  :: (Ord a, Ord c) =>
-     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeFullM ::
+     (Ord a, Ord c)
+  => ((a, Maybe c, Maybe c) -> b)
+  -> [(a, c)]
+  -> [(a, c)]
+  -> [b]
 mergeFullM f = mergeInnerM f mergeFull
 
-mergeLeftM
-  :: (Ord a, Ord c) =>
-     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeLeftM ::
+     (Ord a, Ord c)
+  => ((a, Maybe c, Maybe c) -> b)
+  -> [(a, c)]
+  -> [(a, c)]
+  -> [b]
 mergeLeftM f = mergeInnerM f mergeLeft
 
-mergeRightM
-  :: (Ord a, Ord c) =>
-     ((a, Maybe c, Maybe c) -> b) -> [(a, c)] -> [(a, c)] -> [b]
+mergeRightM ::
+     (Ord a, Ord c)
+  => ((a, Maybe c, Maybe c) -> b)
+  -> [(a, c)]
+  -> [(a, c)]
+  -> [b]
 mergeRightM f = mergeInnerM f mergeRight
 
-mergeInnerM
-  :: (Ord a, Ord c) =>
-     ((a, Maybe c, Maybe c) -> b) -> ([(a, c)] -> [(a, c)] -> [(a, Maybe c, Maybe c)]) -> [(a, c)] -> [(a, c)] -> [b]
+mergeInnerM ::
+     (Ord a, Ord c)
+  => ((a, Maybe c, Maybe c) -> b)
+  -> ([(a, c)] -> [(a, c)] -> [(a, Maybe c, Maybe c)])
+  -> [(a, c)]
+  -> [(a, c)]
+  -> [b]
 mergeInnerM f m xs ys = map f $ m xs ys
 
 inputfile = "input"
